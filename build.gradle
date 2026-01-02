@@ -1,15 +1,22 @@
 //file:noinspection GroovyAssignabilityCheck
 plugins {
     id 'idea'
-    id 'net.neoforged.gradle.userdev' version '7.0.120'
+    id 'net.neoforged.gradle.userdev' version '7.1.12'
     id 'maven-publish'
 }
 
 version = "${minecraftVersion}-1.0.9"
 group = 'ru.marduk'
-archivesBaseName = 'Nedologin'
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+base {
+    archivesName = 'Nedologin'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
 
 jarJar.enable()
 
@@ -40,11 +47,6 @@ runs {
         systemProperty 'forge.enabledGameTestNamespaces', 'nedologin'
     }
 
-    server {
-        systemProperty 'forge.enabledGameTestNamespaces', 'nedologin'
-        programArgument '--nogui'
-    }
-
     // This run config launches GameTestServer and runs all registered gametests, then exits.
     // By default, the server will crash when no gametests are provided.
     // The gametest system is also enabled by default for other run configs under the /test command.
@@ -62,10 +64,14 @@ configurations {
 }
 
 dependencies {
-    implementation 'net.neoforged:neoforge:21.1.22'
+    implementation 'net.neoforged:neoforge:21.1.217'
 
-    jarJar 'at.favre.lib:bytes:[1.0,1.6)'
-    jarJar 'at.favre.lib:bcrypt:[0.4,0.5)'
+    jarJar('at.favre.lib:bytes:[1.0,1.6)') {
+        exclude group: 'org.ow2.asm'
+    }
+    jarJar('at.favre.lib:bcrypt:[0.4,0.5)') {
+        exclude group: 'org.ow2.asm'
+    }
 }
 
 allprojects {
@@ -89,6 +95,39 @@ processResources {
 }
 
 tasks.jar.mustRunAfter(processResources)
+
+def serverDir = file("D:\\tmp\\mcstest")   // 改成你的真实服务器目录
+def modsDir = new File(serverDir, "mods")
+
+tasks.register('buildAndRunServer', Exec) {
+    group = "neoforge"
+    description = "Build mod, copy jar to server, and run server"
+
+    dependsOn tasks.jarJar
+
+    doFirst {
+        modsDir.mkdirs()
+
+        // 找 jarJar 产物（*-all.jar）
+        def jar = fileTree("${buildDir}/libs")
+                .matching { include "*-all.jar" }
+                .singleFile
+
+        copy {
+            from jar
+            into modsDir
+        }
+    }
+
+    workingDir serverDir
+
+    commandLine "java",
+            "-Xms1G",
+            "-Xmx2G",
+            "@user_jvm_args.txt",
+            "@libraries/net/neoforged/neoforge/21.1.217/win_args.txt",
+            "--nogui"
+}
 
 jar {
     manifest {
@@ -116,12 +155,15 @@ publishing {
         }
     }
     repositories {
+//        maven {
+//            credentials {
+//                username "${mmuser}"
+//                password "${mmpassword}"
+//            }
+//            url = "https://maven.marduk.ru/"
+//        }
         maven {
-            credentials {
-                username "${mmuser}"
-                password "${mmpassword}"
-            }
-            url = "https://maven.marduk.ru/"
+            url "file://${project.projectDir}/repo"
         }
     }
 }
