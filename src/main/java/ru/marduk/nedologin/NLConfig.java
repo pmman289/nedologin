@@ -76,6 +76,7 @@ public final class NLConfig {
     public static class Client {
         public final ModConfigSpec.ConfigValue<String> pwdGuiTitle;
         public final ModConfigSpec.ConfigValue<String> pwdGuiDesc;
+        public final ModConfigSpec.ConfigValue<Boolean> pwdRandomGen;
 
         Client(ModConfigSpec.Builder builder){
             pwdGuiTitle = builder
@@ -87,6 +88,10 @@ public final class NLConfig {
                     .comment("The text under the title to notice player")
                     .comment("The default title will be used if pwdGuiTitle is empty")
                     .define("pwdGuiDesc", "");
+
+            pwdRandomGen = builder
+                    .comment("If false, pressing ESC to exit the setup screen will no longer auto-generate a password for the user")
+                    .define("pwdRandomGen", true);
         }
     }
 

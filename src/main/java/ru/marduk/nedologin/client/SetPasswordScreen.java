@@ -23,6 +23,7 @@ public final class SetPasswordScreen extends Screen {
 
     private Component title;
     private Component describe;
+    private Boolean enableRandom;
 
     public SetPasswordScreen(Screen parent) {
         super(Component.translatable("nedologin.password.title"));
@@ -31,9 +32,10 @@ public final class SetPasswordScreen extends Screen {
 
     @Override
     protected void init() {
-        // 获取使用的标题和描述
+        // get config
         String configTitle = NLConfig.CLIENT.pwdGuiTitle.get();
         String configDescribe = NLConfig.CLIENT.pwdGuiDesc.get();
+        enableRandom = NLConfig.CLIENT.pwdRandomGen.get();
         title = configTitle.isEmpty() ?
                 Component.translatable("nedologin.password.title") : Component.literal(configTitle);
         describe = configDescribe.isEmpty() ?
@@ -52,6 +54,8 @@ public final class SetPasswordScreen extends Screen {
                         this.password.setValue(UUID.randomUUID().toString()))
                 .bounds(this.width / 2 + 80, this.height / 2, 20, 20)
                 .build());
+        // set active by config
+        this.buttonRandom.active = enableRandom;
 
         this.buttonComplete = this.addWidget(Button.builder(CommonComponents.GUI_DONE, btn -> {
             String password = this.password.getValue();
@@ -102,9 +106,10 @@ public final class SetPasswordScreen extends Screen {
         if (!PasswordHolder.instance().initialized()) {
             if (!this.password.getValue().isEmpty()) {
                 PasswordHolder.instance().initialize(this.password.getValue());
-            } else {
+            } else if(enableRandom) {
                 PasswordHolder.instance().initialize(UUID.randomUUID().toString());
             }
+            return;
         }
         assert this.minecraft != null;
         Minecraft.getInstance().setScreen(parentScreen);
